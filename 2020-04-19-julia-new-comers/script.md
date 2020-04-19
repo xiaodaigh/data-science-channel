@@ -21,6 +21,22 @@ Because it gets compiled.
 
 So you don't need to use global. Or just SoftGlobalScope.jl
 
+## Julia is a girl name
+
+But please don't use it in a any sexualised or gender specific way.
+
+## Profiling is dead easy
+
+@time
+@elapsed
+@btime
+@belapsed
+@benchmark
+
+
+## How to optimise Julia code?
+Complain about it.
+
 ## Read the 7 gotchas
 
 https://www.stochasticlifestyle.com/7-julia-gotchas-handle/
@@ -37,7 +53,9 @@ Well, a lot of packages are now version bounded.
 talk about @pin and how to interpret message.
 
 
+## The devs are already aware of the TTFP problem
 
+And substantial improvements have been made
 
 
 
