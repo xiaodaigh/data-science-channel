@@ -41,6 +41,9 @@ Complain about it.
 
 https://www.stochasticlifestyle.com/7-julia-gotchas-handle/
 
+## On more gotcha
+2^65
+
 ## It's very easy to make a new package?
 
 See Video
