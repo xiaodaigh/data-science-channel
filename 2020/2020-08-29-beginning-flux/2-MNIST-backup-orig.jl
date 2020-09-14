@@ -10,6 +10,7 @@ using Base.Iterators: repeated
 using Parameters: @with_kw
 using CUDA
 using MLDatasets
+
 if has_cuda()		# Check if CUDA is available
     @info "CUDA is on"
     CUDA.allowscalar(false)
@@ -22,68 +23,21 @@ end
     device::Function = gpu  # set as gpu, if gpu available
 end
 
-# xtrain
+xtrain, ytrain = MLDatasets.MNIST.traindata(Float32)
 
-# m2= Chain(
-#     Dense(784, 32, relu),
-#     Dense(32, 10),
-#     softmax
-# )
+using Images: Gray
 
-# m2g = gpu(m2)
+xtrain[:, :, 1] .|> Gray
+ytrain[1]
 
-# xtrain_cpu = cpu(xtrain)
+xtrain[:, :, 1] |> transpose .|> Gray
+ytrain[1]
 
-# xtrain1 = xtrain[:, 1:1024]
-# xtrain_cpu1 = xtrain_cpu[:, 1:1024]
-
-# @time m2g(xtrain1)
-# @time m2(xtrain_cpu)
-
-@time let l=0
-    for (x,y) in train_data
-        l += logitcrossentropy(m2g(x), y)
-    end
-end
-
-a = rand(1_000_000_000)
-
-using SortingLab
-fsort!(a)
-
-fold_nunique(a) = foldl(((cnt, last_a), new_a)->(cnt+(last_a != new_a), new_a), a; init = (1, a[1]))[1]
+xtrain[:, :, 2] |> transpose .|> Gray
+ytrain[2]
 
 
-function unique_count_reduce_inner((cnt, last_a), new_a)
-    cnt += (last_a != new_a)
-    cnt, new_a
-end
-
-reduce_nunique(a) = reduce(unique_count_reduce_inner, a; init = (1, a[1]))[1]
-
-using ThreadsX
-treduce_nunique(a) = ThreadsX.reduce(unique_count_reduce_inner, a; init = (1, a[1]))[1]
-
-a = rand(1_000_000)
-sort!(a)
-@time reduce_nunique(a) # 0.5
-@time treduce_nunique(a) # 0.3
-
-using ThreadX
-
-sz = ceil(Int, l/nt)+1
-
-@time a |> Partition(sz; flush=true) |> Map(x->(length(unique(x)), x[1], x[end])) |> tcollect
-
-|> Filter(x -> true) |> collect
-
-using Transducers
-nt = Threads.nthreads()
-l = length(a)
-
-
-
-@time a |> Partition(ceil(l/nt)) |> collect
+args = (batchsize=128, )
 
 function getdata(args)
     # Loading Dataset
@@ -104,6 +58,20 @@ function getdata(args)
 
     return train_data, test_data
 end
+
+model = Chain(
+    Dense(28*28, 32, relu),
+    Dense(32, 10))
+
+loss(x,y) = logitcrossentropy(model(x), y)
+
+
+p = params(model)
+
+Flux.train!(loss, p, train_data, opt, cb = evalcb)
+
+iterate(train_data)
+
 
 function build_model(; imgsize=(28,28,1), nclasses=10)
     return Chain(

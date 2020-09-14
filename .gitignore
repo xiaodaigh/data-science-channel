@@ -2,3 +2,4 @@
 *.trec
 *.mp4
 *.camproj
+npm-debug.log
