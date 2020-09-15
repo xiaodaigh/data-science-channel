@@ -1,6 +1,6 @@
 using DataFrames
 using DataFramesMeta
-using DataConvenience: @>, filter
+using DataConvenience: @>, filter, sample
 
 using RCall
 
@@ -27,13 +27,10 @@ filter(starwars, [:skin_color, :eye_color] => (sc, ec) -> (sc .== "light") .& (e
 end
 
 # starwars %>% arrange(height, mass)
-
 @> starwars @orderby(:height, :mass)
-
 
 # starwars %>% arrange(desc(height))
 @> starwars sort(order(:height, rev=true))
-
 
 #starwars %>% slice(5:10)
 @> starwars getindex(5:10, :)
@@ -44,13 +41,11 @@ end
 #starwars %>% slice_tail(n=3)
 @> starwars last(3)
 
-
 #starwars %>% slice_sample(n=5)
-#@as _ starwars getindex(_, sample(starwars()))
-# @> starwars sample(5)
+@> starwars sample(5)
 
 # starwars %>% slice_sample(prop = 0.1)
-# @> starwars sample(0.1)
+@> starwars sample(0.1)
 
 # starwars %>%
 #   filter(!is.na(height)) %>%
@@ -63,7 +58,6 @@ end
 
 
 #starwars %>% select(hair_color, skin_color, eye_color)
-
 @> starwars select(:hair_color, :skin_color, :eye_color)
 
 
@@ -89,7 +83,6 @@ n = filter(endswith("color"), names(starwars))
 
 
 # starwars %>% rename(home_world = homeworld)
-
 @> starwars rename(:homeworld => :home_world)
 
 # starwars %>% mutate(height_m = height / 100)
@@ -101,7 +94,6 @@ n = filter(endswith("color"), names(starwars))
 # starwars %>%
 #   mutate(height_m = height / 100) %>%
 #   select(height_m, height, everything())
-
 @> starwars begin
     @transform(height_m = :height ./ 100)
     select(:height_m, :height, :)
@@ -113,20 +105,17 @@ end
 #     BMI = mass / (height_m^2)
 #   ) %>%
 #   select(BMI, everything())
-
 @> starwars begin
     @transform(height_m = :height ./ 100)
     @transform(BMI = :mass ./ (:height_m.^2))
     select(:BMI, :)
 end
 
-
 # starwars %>%
 #   transmute(
 #     height_m = height / 100,
 #     BMI = mass / (height_m^2)
 #   )
-
 @> starwars begin
     @transform(height_m = :height ./ 100)
     @transform(BMI = :mass ./ (:height_m .^ 2))
@@ -142,11 +131,8 @@ using Statistics: mean
 
 using PairAsPipe
 @> starwars combine(@pap mean(:height |> skipmissing))
-
 @> starwars combine(@pap mean(skipmissing(:height)))
-
 @> starwars combine(@pap (mean∘skipmissing)(:height))
-
 
 # starwars %>%
 #   group_by(species, sex) %>%
@@ -155,7 +141,6 @@ using PairAsPipe
 #     height = mean(height, na.rm = TRUE),
 #     mass = mean(mass, na.rm = TRUE)
 #   )
-
 @> starwars begin
     groupby([:species, :sex])
     select(:height, :mass)
@@ -168,27 +153,21 @@ end
 
 # select(starwars, name)
 # select(starwars, 1)
-
 select(starwars, :name)
 select(starwars, 1)
 
 # height <- 5
 # select(starwars, height) # still refers to heigh not column 5
-
 height = 5
 select(starwars, height)
-
 select(starwars, :height)
 
 
 # name <- "color"
 # select(starwars, ends_with(name))
-
 name = "color"
 n = filter(endswith(name), names(starwars))
 select(starwars, n)
-
-select(starwars)
 
 
 # name <- 5
@@ -206,12 +185,10 @@ select(starwars, vars, "mass")
 df = @> starwars select(:name, :height, :mass)
 
 # mutate(df, "height", 2)
-
-#transform(df, "height" => :col1, 2 => :col2) # doesn't work
-# @> df begin
-#     transform("height" => :col1, 2 => :col2)
-#     rename!(:col1 => "\"height\"", :col2 => "2")
-# end
+@> df begin
+    @transform(col1 = fill("height", nrow(df)), col2 = fill(2, nrow(df)))
+    rename!(:col1 => "\"height\"", :col2 => "2")
+end
 
 
 # mutate(df, height + 10)
@@ -222,9 +199,6 @@ transform(df, :height => h -> h .+ 10)
 # var <- seq(1, nrow(df))
 # mutate(df, new = var)
 var = 1:nrow(df)
-@transform(df, new = var)
-
-var = collect(1:nrow(df))
 @transform(df, new = var)
 
 transform(df, [] => (() -> var) => :new)
@@ -242,12 +216,17 @@ end
 
 
 # group_by(starwars, height_binned = cut(height, 3))
-using CategoricalArrays: cut
-# @> starwars begin
-#     @transform(height_binned = cut(:height, 3; allowmissing=true))
-#     #groupby(:height_binned)
-# end
 
+if false
+    # Ideally, but the `cut`
+    using CategoricalArrays: cut
+    @> starwars begin
+        @transform(height_binned = cut(:height, 3; allowmissing=true))
+        #groupby(:height_binned)
+    end
+end
+
+# define a function ourselves
 function cut_allow_missing(arr::AbstractArray{Union{Missing, T}, N}, ngroups::Integer) where {T, N}
     pos_missing = findall(ismissing, arr)
     pos_nonmissing = findall(elem->!ismissing(elem), arr)
@@ -269,4 +248,4 @@ end
 
 
 # group_by(df, "month")
-groupby(@transform(df, month = "month"), "month")
+groupby(@transform(df, month = fill("month", nrow(df))), "month")

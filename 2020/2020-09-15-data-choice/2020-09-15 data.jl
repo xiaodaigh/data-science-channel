@@ -1,5 +1,5 @@
 using DataFrames
-using DataFramesMacros
+using DataFramesMeta
 using DataConvenience: @>, filter # or using Lazy: @> but it exports groupby
 using Statistics: mean
 
