@@ -1,3 +1,5 @@
+# waiting for @combine to be implemented in
+
 using DataFrames
 using DataFramesMeta
 using DataConvenience: @>, filter, sample
@@ -188,6 +190,12 @@ df = @> starwars select(:name, :height, :mass)
 @> df begin
     @transform(col1 = fill("height", nrow(df)), col2 = fill(2, nrow(df)))
     rename!(:col1 => "\"height\"", :col2 => "2")
+end
+
+@> df begin
+    x -> (x.col1 = "height"; x)
+    x -> (x.col2 = 2; x)
+    rename(:col1 => "\"height\"", :col2 => "2")
 end
 
 
